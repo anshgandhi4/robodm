@@ -3,6 +3,9 @@ __pycache__/
 *.py[cod]
 *$py.class
 
+robodm/outputs/
+robodm/wandb/
+
 # C extensions
 *.so
 

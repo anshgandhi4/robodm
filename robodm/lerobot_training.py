@@ -1,23 +1,3 @@
-# Copyright 2024 The HuggingFace Inc. team. All rights reserved.
-#
-# Licensed under the Apache License, Version 2.0 (the "License");
-# you may not use this file except in compliance with the License.
-# You may obtain a copy of the License at
-#
-#     http://www.apache.org/licenses/LICENSE-2.0
-#
-# Unless required by applicable law or agreed to in writing, software
-# distributed under the License is distributed on an "AS IS" BASIS,
-# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-# See the License for the specific language governing permissions and
-# limitations under the License.
-
-"""This script demonstrates how to train Diffusion Policy on the PushT environment.
-
-Once you have trained a model with this script, you can try to evaluate it on
-examples/2_evaluate_pretrained_policy.py
-"""
-
 from pathlib import Path
 
 import torch
@@ -30,15 +10,11 @@ from lerobot.policies.diffusion.modeling_diffusion import DiffusionPolicy
 
 
 def main():
-    # Create a directory to store the training checkpoint.
     output_directory = Path("outputs/train/example_pusht_diffusion")
     output_directory.mkdir(parents=True, exist_ok=True)
 
-    # # Select your device
     device = torch.device("cuda")
 
-    # Number of offline training steps (we'll only do offline training for this example.)
-    # Adjust as you prefer. 5000 steps are needed to get something worth evaluating.
     training_steps = 5000
     log_freq = 1
 
@@ -84,7 +60,6 @@ def main():
     dataset = LeRobotDataset("lerobot/pusht", delta_timestamps=delta_timestamps)
 
     # Then we create our optimizer and dataloader for offline training.
-    optimizer = torch.optim.Adam(policy.parameters(), lr=1e-4)
     dataloader = torch.utils.data.DataLoader(
         dataset,
         num_workers=4,
@@ -93,6 +68,8 @@ def main():
         pin_memory=device.type != "cpu",
         drop_last=True,
     )
+
+    optimizer = torch.optim.Adam(policy.parameters(), lr=1e-4)
 
     # Run training loop.
     step = 0
@@ -112,9 +89,7 @@ def main():
                 done = True
                 break
 
-    # Save a policy checkpoint.
     policy.save_pretrained(output_directory)
-
 
 if __name__ == "__main__":
     main()

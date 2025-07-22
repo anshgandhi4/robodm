@@ -9,6 +9,7 @@ __root_dir__ = os.path.dirname(os.path.abspath(__file__))
 # from robodm.dataset import Dataset
 # from robodm import trajectory
 
+from robodm.dataset import VLADataset
 from robodm.feature import FeatureType
 from robodm.trajectory import Trajectory
 from robodm.trajectory_base import (FileSystemInterface, TimeProvider,
