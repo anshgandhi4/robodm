@@ -66,21 +66,25 @@ class LerobotConverter:
         # trajectory.close()
 
 if __name__ == "__main__":
-    start_time = time.time()
-    dataset_name = "lerobot/pusht" # Modify this to the dataset you want to convert
-    converter = LerobotConverter(dataset_name)
-    
-    load_start = time.time()
-    dataset = converter.load_dataset()
-    load_time = time.time() - load_start
-    
-    convert_start = time.time()
-    roboDM_dataset = converter.convert_to_roboDM(codec='auto', output_path="./tmp/temporal_demo.vla")
-    convert_time = time.time() - convert_start
-    
-    total_time = time.time() - start_time
-    print(f"\nTiming Results:")
-    print(f"Dataset loading: {load_time:.2f}s")
-    print(f"Conversion: {convert_time:.2f}s")
-    print(f"Total time: {total_time:.2f}s")
+    for codec in ['auto', 'rawvideo', 'libaom-av1', 'libx264', 'libx265', 'ffv1']:
+
+        output_path = f"./tmp/temporalNew/temporal_demo_{codec}.vla"
+        print(f"Converting {codec} and saving to {output_path}...")
+        start_time = time.time()
+        dataset_name = "lerobot/pusht" # Modify this to the dataset you want to convert
+        converter = LerobotConverter(dataset_name)
+        
+        load_start = time.time()
+        dataset = converter.load_dataset()
+        load_time = time.time() - load_start
+        
+        convert_start = time.time()
+        roboDM_dataset = converter.convert_to_roboDM(codec=codec, output_path=output_path)
+        convert_time = time.time() - convert_start
+        
+        total_time = time.time() - start_time
+        print(f"\nTiming Results:")
+        print(f"Dataset loading: {load_time:.2f}s")
+        print(f"Conversion: {convert_time:.2f}s")
+        print(f"Total time: {total_time:.2f}s")
 
