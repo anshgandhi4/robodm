@@ -61,7 +61,7 @@ if __name__ == "__main__":
     load_time = time.time() - load_start
     
     convert_start = time.time()
-    roboDM_dataset = converter.convert_to_roboDM(codec='h264', output_path="./tmp/robot_demoNew25650Temporal1.vla")
+    roboDM_dataset = converter.convert_to_roboDM(codec='libx264', output_path="./tmp/robot_demoNew25650Temporal1.vla")
     convert_time = time.time() - convert_start
     
     total_time = time.time() - start_time
