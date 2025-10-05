@@ -51,18 +51,6 @@ class LerobotConverter:
 
         trajectory.close()
 
-        trajectory = robodm.Trajectory(path=output_path, mode='r')
-        data = trajectory.load()
-        # Reconstruct observation.image from individual frames
-        image_keys = [k for k in list(data.keys()) if 'observation.image_' in k]
-        if image_keys:
-            # Stack frames: [N_frames, H, W, C] -> [N_frames, T, H, W, C] -> [N_frames, T, C, H, W]
-            stacked_images = np.stack([data.pop(k) for k in sorted(image_keys)], axis=1)
-            data['observation.image'] = stacked_images.transpose(0, 1, 4, 2, 3)
-        print(f'time to load dataset: {time.time() - start_time:.2f} seconds')
-
-        trajectory.close()
-
 if __name__ == "__main__":
     start_time = time.time()
     dataset_name = "lerobot/pusht" # Modify this to the dataset you want to convert
