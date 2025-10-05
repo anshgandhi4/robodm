@@ -93,7 +93,7 @@ def main():
 
     # We can then instantiate the dataset with these delta_timestamps configuration.
     # dataset = LeRobotDataset("lerobot/pusht", delta_timestamps=delta_timestamps)
-    dataset = LeRobotRobodmDataset(trajectory_path="./tmp/robo_demoNew25650Temporal1.vla", delta_timestamps=delta_timestamps, dataset_metadata=dataset_metadata)
+    dataset = LeRobotRobodmDataset(trajectory_path="./tmp/temporal_demo.vla", delta_timestamps=delta_timestamps, dataset_metadata=dataset_metadata)
     print(f"Dataset length: {dataset.__len__()}")
 
     # Then we create our optimizer and dataloader for offline training.

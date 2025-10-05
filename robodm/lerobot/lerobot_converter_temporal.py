@@ -38,7 +38,7 @@ class LerobotConverter:
         print(f"Dataset size: {len(self.dataset)}")
 
         trajectory = robodm.Trajectory(path=output_path, mode="w", video_codec=codec)
-        # print(self.dataset.features)
+        print(self.dataset.features)
 
         for item in tqdm(self.dataset):
             for i in range(len(item['observation.image'])):
@@ -47,9 +47,23 @@ class LerobotConverter:
             trajectory.add('action', item['action'].numpy())
             trajectory.add('episode_index', item['episode_index'].numpy())
             trajectory.add('frame_index', item['frame_index'].numpy())
-            trajectory.add('timestamp', item['timestamp'].numpy())
+            
+            # Add padding information
+            if 'observation.state_is_pad' in item:
+                trajectory.add('observation.state_is_pad', item['observation.state_is_pad'].numpy())
+            if 'observation.image_is_pad' in item:
+                trajectory.add('observation.image_is_pad', item['observation.image_is_pad'].numpy())
+            if 'action_is_pad' in item:
+                trajectory.add('action_is_pad', item['action_is_pad'].numpy())
 
         trajectory.close()
+
+        # trajectory = robodm.Trajectory(path=output_path, mode='r')
+        # data = trajectory.load()
+        # data['observation.image'] = np.stack([data.pop(k) for k in list(data.keys()) if 'observation.image_' in k and not k.endswith('_is_pad')], axis=1).transpose(0, 1, 4, 2, 3)
+        # print(f'time to load dataset: {time.time() - start_time:.2f} seconds')
+
+        # trajectory.close()
 
 if __name__ == "__main__":
     start_time = time.time()
@@ -61,7 +75,7 @@ if __name__ == "__main__":
     load_time = time.time() - load_start
     
     convert_start = time.time()
-    roboDM_dataset = converter.convert_to_roboDM(codec='libx264', output_path="./tmp/robot_demoNew25650Temporal1.vla")
+    roboDM_dataset = converter.convert_to_roboDM(codec='auto', output_path="./tmp/temporal_demo.vla")
     convert_time = time.time() - convert_start
     
     total_time = time.time() - start_time
