@@ -2,9 +2,9 @@ from PIL.ImageFile import Image
 from datasets import load_dataset
 import matplotlib.pyplot as plt
 import robodm
-from robodm.ingestion import create_vla_dataset_from_source, PyTorchDatasetAdapter
 import numpy as np
 import time
+from tqdm import tqdm
 
 class LerobotConverter:
     def __init__(self, dataset_name):
@@ -22,10 +22,11 @@ class LerobotConverter:
         trajectory = robodm.Trajectory(path=output_path, mode="w", video_codec=codec)
         print(hf_dataset.features)
 
-        for item in hf_dataset.take(25650):
-            print(item)
+        for item in tqdm(hf_dataset.take(25650)):
+            # print(item)
             image = item["observation.image"]
             image_array = np.array(image)
+            # print(image_array.shape)
 
             trajectory.add("observation.image", image_array)
             trajectory.add("observation.state", item["observation.state"])
@@ -44,9 +45,15 @@ class LerobotConverter:
         trajectory.close()
 
 if __name__ == "__main__":
-    for codec in ['auto', 'rawvideo', 'libaom-av1', 'libx264', 'libx265', 'ffv1']:
+    for codec in [
+        # 'auto', 'rawvideo', 
+    'libaom-av1', 
+    # 'libx264', 
+    # 'libx265', 
+    # 'ffv1'
+    ]:
 
-        output_path = f"./tmp/single_images/single_images_demo_{codec}.vla"
+        output_path = f"./tmp/single_imagesNew/single_images_demo_{codec}.vla"
         print(f"Converting {codec} and saving to {output_path}...")
 
         start_time = time.time()

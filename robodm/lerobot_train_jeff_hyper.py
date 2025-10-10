@@ -41,10 +41,10 @@ WANDB = True
 
 def main(codec='auto'):
     if WANDB:
-        run = wandb.init(project='robodm-x-lerobot', name=f'train-{codec}')
+        run = wandb.init(project='robodm-x-lerobot', name=f'train-{codec}-100k-1e-4')
 
     # Create a directory to store the training checkpoint.
-    output_directory = Path(f'outputs/train/wandb/{codec}')
+    output_directory = Path(f'outputs/train/wandb/{codec}-100k-1e-4')
     output_directory.mkdir(parents=True, exist_ok=True)
 
     # # Select your device
@@ -52,7 +52,7 @@ def main(codec='auto'):
 
     # Number of offline training steps (we'll only do offline training for this example.)
     # Adjust as you prefer. 5000 steps are needed to get something worth evaluating.
-    training_steps = 20000
+    training_steps = 100000
     warmup_steps = 1000  # Warmup steps for learning rate scheduling
     log_freq = 100
 
@@ -75,8 +75,8 @@ def main(codec='auto'):
     cfg = DiffusionConfig(
         input_features=input_features, 
         output_features=output_features,
-        num_train_timesteps=1000,  # Increase from 100
-        optimizer_lr=5e-5,  # Lower learning rate
+        num_train_timesteps=100,
+        optimizer_lr=1e-4,
     )
 
     # We can now instantiate our policy with this config and the dataset stats.
@@ -106,11 +106,11 @@ def main(codec='auto'):
 
     # We can then instantiate the dataset with these delta_timestamps configuration.
     # dataset = LeRobotDataset("lerobot/pusht", delta_timestamps=delta_timestamps)
-    dataset = LeRobotRobodmDataset(trajectory_path=f"./tmp/temporal/temporal_demo_{codec}.vla", delta_timestamps=delta_timestamps, dataset_metadata=dataset_metadata)
+    dataset = LeRobotRobodmDataset(trajectory_path=f"./tmp/single_imagesNew/single_images_demo_{codec}.vla", delta_timestamps=delta_timestamps, dataset_metadata=dataset_metadata)
     print(f"Dataset length: {dataset.__len__()}")
     
     # Then we create our optimizer and dataloader for offline training.
-    optimizer = torch.optim.Adam(policy.parameters(), lr=5e-5)  # Use the same LR as in config
+    optimizer = torch.optim.Adam(policy.parameters(), lr=1e-4)  # Use the same LR as in config
     
     # Create learning rate schedulers
     # Warmup scheduler: linearly increase LR from 0 to target LR over warmup_steps
@@ -150,9 +150,6 @@ def main(codec='auto'):
             batch = {k: (v.to(device) if isinstance(v, torch.Tensor) else v) for k, v in batch.items()}
             loss, _ = policy.forward(batch)
             loss.backward()
-            
-            # Gradient clipping for stability
-            torch.nn.utils.clip_grad_norm_(policy.parameters(), max_norm=1.0)
             
             optimizer.step()
             optimizer.zero_grad()
@@ -203,7 +200,10 @@ def main(codec='auto'):
 
 if __name__ == "__main__":
     if WANDB:
-        for codec in ['auto', 'rawvideo', 'libaom-av1', 'libx264', 'libx265', 'ffv1']:
+        for codec in [
+            'rawvideo', 'auto', 'libaom-av1', 'libx264', 'libx265', 
+            # 'ffv1'
+            ]:
             main(codec)
     else:
         main()
