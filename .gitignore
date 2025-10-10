@@ -6,6 +6,8 @@ __pycache__/
 robodm/outputs/
 robodm/wandb/
 outputs/
+tmp/
+wandb/
 
 # C extensions
 *.so
