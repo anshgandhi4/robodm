@@ -8,11 +8,10 @@ import wandb
 import robodm
 
 from lerobot.configs.types import FeatureType
-from lerobot.common.datasets.lerobot_dataset import LeRobotDataset, LeRobotDatasetMetadata
-from lerobot.common.datasets.utils import dataset_to_policy_features
-from lerobot.common.policies.diffusion.configuration_diffusion import DiffusionConfig
-from lerobot.common.policies.diffusion.modeling_diffusion import DiffusionPolicy
-
+from lerobot.datasets.lerobot_dataset import LeRobotDataset, LeRobotDatasetMetadata
+from lerobot.datasets.utils import dataset_to_policy_features
+from lerobot.policies.diffusion.configuration_diffusion import DiffusionConfig
+from lerobot.policies.diffusion.modeling_diffusion import DiffusionPolicy
 
 WANDB = True
 
@@ -40,12 +39,6 @@ def main(codec='auto'):
     policy.train()
     policy.to(device)
 
-    # delta_timestamps = {
-    #     'observation.image': [i / dataset_metadata.fps for i in cfg.observation_delta_indices],
-    #     'observation.state': [i / dataset_metadata.fps for i in cfg.observation_delta_indices],
-    #     'action': [i / dataset_metadata.fps for i in cfg.action_delta_indices],
-    # }
-
     delta_timestamps = {
         'observation.image': [-0.1, 0.0],
         'observation.state': [-0.1, 0.0],
@@ -67,7 +60,7 @@ def main(codec='auto'):
     # save lerobot dataset as robodm, then load robodm dataset              #
     #########################################################################
 
-    trajectory = robodm.Trajectory(path=f'/home/anshg/Documents/robodm/robodm/model/{codec}/robot_demo.vla', mode='w', video_codec=codec)
+    trajectory = robodm.Trajectory(path=Path(f'model/{codec}/robot_demo.vla'), mode='w', video_codec=codec)
 
     start_time = time.time()
     for item in tqdm(dataset):
@@ -83,7 +76,7 @@ def main(codec='auto'):
     print(f'time to close dataset: {time.time() - start_time:.2f} seconds')
 
     start_time = time.time()
-    trajectory = robodm.Trajectory(path=f'/home/anshg/Documents/robodm/robodm/model/{codec}/robot_demo.vla', mode='r')
+    trajectory = robodm.Trajectory(path=Path(f'model/{codec}/robot_demo.vla'), mode='r')
     data = trajectory.load()
     data['observation.image'] = np.stack([data.pop(k) for k in list(data.keys()) if 'observation.image_' in k], axis=1).transpose(0, 1, 4, 2, 3)
     print(f'time to load dataset: {time.time() - start_time:.2f} seconds')
@@ -132,29 +125,33 @@ def main(codec='auto'):
             batch[k] = torch.stack(padded_arrays).to(device)
             batch[f'{k}_is_pad'] = torch.stack(masks).to(device)
 
-            loss, _ = policy.forward(batch)
-            loss.backward()
-            optimizer.step()
-            optimizer.zero_grad()
-            scheduler.step()
+        loss, _ = policy.forward(batch)
+        loss.backward()
+        optimizer.step()
+        optimizer.zero_grad()
+        scheduler.step()
 
-            running_loss += loss.item()
-            loss_count += 1
+        running_loss += loss.item()
+        loss_count += 1
 
-            if step % log_freq == 0:
-                avg_loss = running_loss / loss_count
+        if step % log_freq == 0:
+            avg_loss = running_loss / loss_count
 
-                if WANDB:
-                    wandb.log({
-                        'train/loss': loss.item(),
-                        'train/avg_loss': avg_loss,
-                        'train/epoch': step,
-                        'train/time': time.time() - start_time,
-                        'train/learning_rate': optimizer.param_groups[0]['lr']
-                    })
+            if WANDB:
+                wandb.log({
+                    'train/loss': loss.item(),
+                    'train/avg_loss': avg_loss,
+                    'train/epoch': step,
+                    'train/time': time.time() - start_time,
+                    'train/learning_rate': optimizer.param_groups[0]['lr']
+                })
+            else:
+                print(f"step: {step} loss: {loss.item():.3f}")
 
-                running_loss = 0.0
-                loss_count = 0
+            running_loss = 0.0
+            loss_count = 0
+
+    print(f'time taken to train: {time.time() - start_time:.2f} seconds')
 
     policy.save_pretrained(output_directory)
 
@@ -162,8 +159,6 @@ def main(codec='auto'):
         wandb.save(str(output_directory / '*'))
         run.alert('training complete', text=f'{codec} finished training')
         wandb.finish()
-
-    print(f'time taken to train: {time.time() - start_time:.2f} seconds')
 
 if __name__ == '__main__':
     if WANDB:

@@ -1,16 +1,12 @@
 """Custom PyTorch Dataset for RoboDM trajectories."""
 
-from typing import Dict, Any
 import numpy as np
 import torch
-from torch.utils.data import Dataset
 import robodm
 from lerobot.datasets.lerobot_dataset import LeRobotDataset, LeRobotDatasetMetadata
 from lerobot.datasets.utils import get_delta_indices, get_episode_data_index
-import matplotlib.pyplot as plt
 
-class LeRobotRobodmDataset(Dataset):
-
+class LeRobotRobodmDataset(torch.utils.data.Dataset):
     def __init__(self, trajectory_path: str, delta_timestamps: dict, dataset_metadata: LeRobotDatasetMetadata, return_type: str = "numpy"):
         self.trajectory_path = trajectory_path
         # Load trajectory data
@@ -105,7 +101,7 @@ class LeRobotRobodmDataset(Dataset):
         # # Fallback to computed padding if not available in saved data
         if not any(key in item for key in ['observation.state_is_pad', 'observation.image_is_pad', 'action_is_pad']):
             item.update(padding)
-        
+
         # Add metadata
         item["episode_index"] = self.data["episode_index"][idx]
         item["frame_index"] = self.data["frame_index"][idx]

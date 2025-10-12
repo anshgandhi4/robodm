@@ -1,6 +1,4 @@
-from PIL.ImageFile import Image
 from datasets import load_dataset
-import matplotlib.pyplot as plt
 import robodm
 import numpy as np
 import time
@@ -46,11 +44,12 @@ class LerobotConverter:
 
 if __name__ == "__main__":
     for codec in [
-        # 'auto', 'rawvideo', 
-    'libaom-av1', 
-    # 'libx264', 
-    # 'libx265', 
-    # 'ffv1'
+        # 'auto',
+        # 'rawvideo',
+        'libaom-av1',
+        # 'libx264',
+        # 'libx265',
+        # 'ffv1',
     ]:
 
         output_path = f"./tmp/single_imagesNew/single_images_demo_{codec}.vla"

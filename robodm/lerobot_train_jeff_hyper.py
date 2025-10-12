@@ -47,7 +47,6 @@ def main(codec='auto'):
     output_directory = Path(f'outputs/train/wandb/{codec}-100k-1e-4')
     output_directory.mkdir(parents=True, exist_ok=True)
 
-    # # Select your device
     device = torch.device("cuda")
 
     # Number of offline training steps (we'll only do offline training for this example.)
@@ -60,14 +59,12 @@ def main(codec='auto'):
     # creating the policy:
     #   - input/output shapes: to properly size the policy
     #   - dataset stats: for normalization and denormalization of input/outputs
-    dataset_metadata = LeRobotDatasetMetadata("lerobot/pusht")
+    dataset_metadata = LeRobotDatasetMetadata("lerobot/pusht_image")
     features = dataset_to_policy_features(dataset_metadata.features)
     output_features = {key: ft for key, ft in features.items() if ft.type is FeatureType.ACTION}
     input_features = {key: ft for key, ft in features.items() if key not in output_features}
 
     print(input_features)
-
-    time.sleep(10)
 
 
     # Policies are initialized with a configuration class, in this case `DiffusionConfig`. For this example,
@@ -146,15 +143,12 @@ def main(codec='auto'):
     
     while not done:
         print(f"Starting epoch, step {step}")
-        for batch_idx, batch in enumerate(dataloader):
+        for batch in dataloader:
             batch = {k: (v.to(device) if isinstance(v, torch.Tensor) else v) for k, v in batch.items()}
             loss, _ = policy.forward(batch)
             loss.backward()
-            
             optimizer.step()
             optimizer.zero_grad()
-            
-            # Step the scheduler
             scheduler.step()
 
             running_loss += loss.item()

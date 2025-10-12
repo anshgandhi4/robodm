@@ -10,7 +10,7 @@ import random
 import torch
 import wandb
 
-from lerobot.common.policies.diffusion.modeling_diffusion import DiffusionPolicy
+from lerobot.policies.diffusion.modeling_diffusion import DiffusionPolicy
 
 device = 'cuda'
 
