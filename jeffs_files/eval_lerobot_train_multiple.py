@@ -26,27 +26,33 @@ from pathlib import Path
 
 import gym_pusht  # noqa: F401
 import gymnasium as gym
-import numpy
 import torch
 from tqdm import tqdm
+import imageio
+import json
 
 from lerobot.policies.diffusion.modeling_diffusion import DiffusionPolicy
 
 # Configuration
-NUM_TESTS = 100  # Number of tests to run - change this value as needed
-BATCH_SIZE = 100  # Number of parallel environments to run simultaneously
+NUM_TESTS = 1000  # Number of tests to run - change this value as needed
+BATCH_SIZE = 1000  # Number of parallel environments to run simultaneously
+THRESHOLD = 0.95
 
 for experiment in [
-    "rawvideo-100k-1e-4", 
-    "auto-100k-1e-4", 
-    # "libaom-av1", "libx264", "libx265", "ffv1"
+    "auto",
+    # "rawvideo",
+    # "libaom-av1",
+    # "libx264",
+    # "libx265",
+    # "ffv1",
 ]:
-
-    EXPERIMENT_NAME = f"wandb/{experiment}"  # Name of the experiment
-
     # Create a directory to store the evaluation results
-    output_directory = Path(f"outputs/eval/{EXPERIMENT_NAME}")
+    output_directory = Path(f"outputs/eval/wandb/new_eval/{experiment}-100k")
     output_directory.mkdir(parents=True, exist_ok=True)
+
+    # create directory to store rollout videos
+    video_directory = output_directory / "rollout_videos"
+    video_directory.mkdir(parents=True, exist_ok=True)
 
     # Select your device
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
@@ -58,7 +64,7 @@ for experiment in [
     # Provide the [hugging face repo id](https://huggingface.co/lerobot/diffusion_pusht):
     # pretrained_policy_path = "lerobot/diffusion_pusht"
     # OR a path to a local outputs/train folder.
-    pretrained_policy_path = Path(f"outputs/train/{EXPERIMENT_NAME}")
+    pretrained_policy_path = Path(f"outputs/train/wandb/{experiment}-100k")
 
     policy = DiffusionPolicy.from_pretrained(pretrained_policy_path)
 
@@ -74,17 +80,19 @@ for experiment in [
 
     # We can verify that the shapes of the features expected by the policy match the ones from the observations
     # produced by the environment
-    print(policy.config.input_features)
-    print(env.observation_space)
+    # print(policy.config.input_features)
+    # print(env.observation_space)
 
     # Similarly, we can check that the actions produced by the policy will match the actions expected by the
     # environment
-    print(policy.config.output_features)
-    print(env.action_space)
+    # print(policy.config.output_features)
+    # print(env.action_space)
 
     # Initialize lists to track results across all tests
     all_results = []
     all_rewards = []
+
+    reward_history = {}
 
     # Calculate number of batches needed
     n_batches = NUM_TESTS // BATCH_SIZE + int((NUM_TESTS % BATCH_SIZE) != 0)
@@ -98,6 +106,18 @@ for experiment in [
         # Reset environments with different seeds for each environment in the batch
         seeds = [42 + batch_idx * BATCH_SIZE + i for i in range(BATCH_SIZE)]
         numpy_observation, info = env.reset(seed=seeds)
+
+        # initialize video writers for this batch
+        batch_video_writers = []
+        batch_frames = []
+        for i in range(BATCH_SIZE):
+            episode_idx = batch_idx * BATCH_SIZE + i
+            if episode_idx < NUM_TESTS:
+                batch_video_writers.append(str(video_directory / f"rollout_{episode_idx}.mp4"))
+                batch_frames.append([])
+            else:
+                batch_video_writers.append(None)
+                batch_frames.append(None)
 
         # Prepare to collect rewards for all environments in batch
         batch_rewards = [[] for _ in range(BATCH_SIZE)]
@@ -141,17 +161,29 @@ for experiment in [
             # Step through the environment and receive a new observation
             numpy_observation, reward, terminated, truncated, info = env.step(numpy_action)
             
+            # record frames for video
+            for i in range(BATCH_SIZE):
+                if batch_frames[i] is not None and not batch_dones[i]:
+                    batch_frames[i].append(numpy_observation["pixels"][i])
+
             # Keep track of rewards for each environment in the batch
             for i in range(BATCH_SIZE):
                 if not batch_dones[i]:
                     batch_rewards[i].append(reward[i])
-                    if terminated[i] or truncated[i]:
+
+                    episode_idx = batch_idx * BATCH_SIZE + i
+                    if episode_idx < NUM_TESTS:
+                        if episode_idx not in reward_history:
+                            reward_history[episode_idx] = []
+                        reward_history[episode_idx].append(reward[i])
+
+                    if terminated[i] or truncated[i] or reward[i] >= THRESHOLD:
                         batch_dones[i] = True
-                        batch_successes[i] = terminated[i]
+                        batch_successes[i] = terminated[i] or reward[i] >= THRESHOLD
 
             # The rollout is considered done when all environments are done
             step += 1
-            
+
             # Update episode progress bar
             episode_bar.update(1)
             running_rewards = [sum(rewards) for rewards in batch_rewards if rewards]
@@ -165,6 +197,11 @@ for experiment in [
         # Close episode progress bar
         episode_bar.close()
         
+        # save videos
+        for i, (video_path, frames) in enumerate(zip(batch_video_writers, batch_frames)):
+            if video_path is not None and frames is not None:
+                imageio.mimsave(video_path, frames, fps=30)
+
         # Record results for all environments in this batch
         for i in range(BATCH_SIZE):
             if i < NUM_TESTS - batch_idx * BATCH_SIZE:  # Only count up to NUM_TESTS
@@ -172,7 +209,7 @@ for experiment in [
                 total_reward = sum(batch_rewards[i])
                 all_results.append(success)
                 all_rewards.append(total_reward)
-        
+
         # Update main progress bar with current success rate
         current_success_rate = sum(all_results) / len(all_results) * 100 if all_results else 0
         progress_bar.set_postfix({
@@ -194,6 +231,22 @@ for experiment in [
     print(f"Min total reward: {min_reward:.2f}")
     print(f"Max total reward: {max_reward:.2f}")
     print(f"Results saved in: {output_directory}")
+    print(f"Rollout videos saved in: {video_directory}")
+
+    # save reward history to file
+    reward_maxes = dict()
+    for episode_idx in reward_history:
+        reward_maxes[episode_idx] = max(reward_history[episode_idx])
+
+    reward_history_path = output_directory / "reward_history.json"
+    with open(reward_history_path, 'w') as f:
+        json.dump(reward_maxes, f, indent=2)
+        json.dump(reward_history, f, indent=2)
+    total_timesteps = sum(len(timesteps) for timesteps in reward_history.values())
+
+    print(f"Reward history saved in: {reward_history_path}")
+    print(f"Total episodes recorded: {len(reward_history)}")
+    print(f"Total timesteps recorded: {total_timesteps}")
 
     # Close the environment
     env.close()
