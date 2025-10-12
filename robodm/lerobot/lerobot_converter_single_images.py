@@ -17,7 +17,10 @@ class LerobotConverter:
         hf_dataset = self.dataset["train"]
         print(f"Dataset size: {len(hf_dataset)}")
 
-        trajectory = robodm.Trajectory(path=output_path, mode="w", video_codec=codec)
+        if codec.startswith('rawvideo'):
+            trajectory = robodm.Trajectory(path=output_path, mode="w", video_codec=codec, raw_codec=codec)
+        else:
+            trajectory = robodm.Trajectory(path=output_path, mode="w", video_codec=codec)
         print(hf_dataset.features)
 
         for item in tqdm(hf_dataset.take(25650)):

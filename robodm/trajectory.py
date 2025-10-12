@@ -421,7 +421,7 @@ class CodecConfigDisabled:
     }
 
     def __init__(self,
-                 codec: str = "auto",
+                 video_codec: str = "auto",
                  options: Optional[Dict[str, Any]] = None):
         """
         Initialize codec configuration.
@@ -430,12 +430,12 @@ class CodecConfigDisabled:
             codec: Video codec to use. Options: "auto", "rawvideo", "libx264", "libx265", "libaom-av1", "ffv1"
             options: Additional codec-specific options
         """
-        self.codec = codec
+        self.codec = video_codec
         self.custom_options = options or {}
 
-        if codec not in ["auto"] and codec not in self.CODEC_CONFIGS:
+        if self.codec not in ["auto"] and self.codec not in self.CODEC_CONFIGS:
             raise ValueError(
-                f"Unsupported codec: {codec}. Supported: {list(self.CODEC_CONFIGS.keys())}"
+                f"Unsupported codec: {self.codec}. Supported: {list(self.CODEC_CONFIGS.keys())}"
             )
 
     def get_codec_for_feature(self, feature_type: FeatureType) -> str:
@@ -559,7 +559,7 @@ class Trajectory(TrajectoryInterface):
 
         # Initialize codec configuration with separate video and raw codec support
         self.codec_config = CodecConfig(
-            codec=video_codec,
+            codec=raw_codec if raw_codec else video_codec,
             options=codec_options,
             video_codec=video_codec if video_codec != "auto" else None,
             raw_codec=raw_codec
