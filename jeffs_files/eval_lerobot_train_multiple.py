@@ -35,19 +35,19 @@ from lerobot.policies.diffusion.modeling_diffusion import DiffusionPolicy
 
 # Configuration
 NUM_TESTS = 1000  # Number of tests to run - change this value as needed
-BATCH_SIZE = 1000  # Number of parallel environments to run simultaneously
-THRESHOLD = 0.95
+BATCH_SIZE = 100  # Number of parallel environments to run simultaneously
+THRESHOLD = 0.97
 
 for experiment in [
     "auto",
-    # "rawvideo",
-    # "libaom-av1",
-    # "libx264",
-    # "libx265",
+    "rawvideo",
+    "libaom-av1",
+    "libx264",
+    "libx265",
     # "ffv1",
 ]:
     # Create a directory to store the evaluation results
-    output_directory = Path(f"outputs/eval/wandb/new_eval/{experiment}-100k")
+    output_directory = Path(f"outputs/eval/wandb/new_eval/{experiment}-100k-1e-4-overnight-saturday-97")
     output_directory.mkdir(parents=True, exist_ok=True)
 
     # create directory to store rollout videos
@@ -64,7 +64,7 @@ for experiment in [
     # Provide the [hugging face repo id](https://huggingface.co/lerobot/diffusion_pusht):
     # pretrained_policy_path = "lerobot/diffusion_pusht"
     # OR a path to a local outputs/train folder.
-    pretrained_policy_path = Path(f"outputs/train/wandb/{experiment}-100k")
+    pretrained_policy_path = Path(f"outputs/train/wandb/{experiment}-100k-1e-4-overnight-saturday")
 
     policy = DiffusionPolicy.from_pretrained(pretrained_policy_path)
 
