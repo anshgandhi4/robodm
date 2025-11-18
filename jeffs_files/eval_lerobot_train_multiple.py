@@ -35,19 +35,22 @@ from lerobot.policies.diffusion.modeling_diffusion import DiffusionPolicy
 
 # Configuration
 NUM_TESTS = 1000  # Number of tests to run - change this value as needed
-BATCH_SIZE = 100  # Number of parallel environments to run simultaneously
+BATCH_SIZE = 1000  # Number of parallel environments to run simultaneously
 THRESHOLD = 0.97
 
-for experiment in [
-    "auto",
-    "rawvideo",
-    "libaom-av1",
-    "libx264",
-    "libx265",
-    # "ffv1",
-]:
+# for experiment in [
+#     "auto",
+#     "rawvideo",
+#     "libaom-av1",
+#     "libx264",
+#     "libx265",
+#     # "ffv1",
+# ]:
+
+for i in range(18, 19):
+    experiment = f"libx264-g30-crf{i}-100k-1e-4"
     # Create a directory to store the evaluation results
-    output_directory = Path(f"outputs/eval/wandb/new_eval/{experiment}-100k-1e-4-overnight-saturday-97")
+    output_directory = Path(f"outputs/eval/wandb/{experiment}")
     output_directory.mkdir(parents=True, exist_ok=True)
 
     # create directory to store rollout videos
@@ -64,7 +67,7 @@ for experiment in [
     # Provide the [hugging face repo id](https://huggingface.co/lerobot/diffusion_pusht):
     # pretrained_policy_path = "lerobot/diffusion_pusht"
     # OR a path to a local outputs/train folder.
-    pretrained_policy_path = Path(f"outputs/train/wandb/{experiment}-100k-1e-4-overnight-saturday")
+    pretrained_policy_path = Path(f"outputs/train/wandb/{experiment}")
 
     policy = DiffusionPolicy.from_pretrained(pretrained_policy_path)
 
@@ -197,10 +200,10 @@ for experiment in [
         # Close episode progress bar
         episode_bar.close()
         
-        # save videos
-        for i, (video_path, frames) in enumerate(zip(batch_video_writers, batch_frames)):
-            if video_path is not None and frames is not None:
-                imageio.mimsave(video_path, frames, fps=30)
+        # # save videos
+        # for i, (video_path, frames) in enumerate(zip(batch_video_writers, batch_frames)):
+        #     if video_path is not None and frames is not None:
+        #         imageio.mimsave(video_path, frames, fps=30)
 
         # Record results for all environments in this batch
         for i in range(BATCH_SIZE):
