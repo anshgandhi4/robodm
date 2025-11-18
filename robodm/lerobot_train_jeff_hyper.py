@@ -23,6 +23,7 @@ from typing import Dict, Any
 import numpy as np
 import torch
 from torch.utils.data import Dataset
+import os
 import robodm
 from robodm.dataset import load_trajectory_dataset, load_slice_dataset
 import time
@@ -101,7 +102,6 @@ def train_with_compression_params(codec='auto', g=None, crf=None):
 
     print(input_features)
 
-
     # Policies are initialized with a configuration class, in this case `DiffusionConfig`. For this example,
     # we'll just use the defaults and so no arguments other than input/output features need to be passed.
     cfg = DiffusionConfig(
@@ -162,6 +162,10 @@ def train_with_compression_params(codec='auto', g=None, crf=None):
     print(f"Dataset loading: {load_time:.2f}s")
     print(f"Conversion: {convert_time:.2f}s")
     print(f"Total time: {total_time:.2f}s")
+    print(f"Dataset size: {os.path.getsize(output_path) / 1024 / 1024:.2f} MB")
+
+    if WANDB:
+        wandb.log({'compression/size': os.path.getsize(output_path) / 1024 / 1024})
 
     # ========================================
 
@@ -452,6 +456,14 @@ def run_compression_sweep():
             for g in g_values:
                 for crf in crf_values:
                     experiments.append({'codec': codec, 'g': g, 'crf': crf})
+        elif capabilities['supports_crf'] and not capabilities['supports_g']:
+            # codec supports crf but not g
+            for crf in crf_values:
+                experiments.append({'codec': codec, 'g': None, 'crf': crf})
+        elif not capabilities['supports_crf'] and capabilities['supports_g']:
+            # codec supports g but not crf
+            for g in g_values:
+                experiments.append({'codec': codec, 'g': g, 'crf': None})
         else:
             # Codec doesn't support g/crf, test with None values
             experiments.append({'codec': codec, 'g': None, 'crf': None})
