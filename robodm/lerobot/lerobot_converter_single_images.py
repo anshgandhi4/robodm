@@ -12,13 +12,21 @@ class LerobotConverter:
         self.dataset = load_dataset(self.dataset_name)
         return self.dataset
 
-    def convert_to_roboDM(self, output_path, codec):
+    def convert_to_roboDM(self, output_path, codec, g=None, crf=None):
         print(self.dataset)
         hf_dataset = self.dataset["train"]
         print(f"Dataset size: {len(hf_dataset)}")
 
         if codec.startswith('rawvideo'):
             trajectory = robodm.Trajectory(path=output_path, mode="w", video_codec=codec, raw_codec=codec)
+        elif codec.startswith('libx264') or codec.startswith('libx265'):
+            # Build codec_options dict with only non-None values
+            codec_options = {}
+            if g is not None:
+                codec_options['g'] = g
+            if crf is not None:
+                codec_options['crf'] = crf
+            trajectory = robodm.Trajectory(path=output_path, mode="w", video_codec=codec, codec_options=codec_options if codec_options else None)
         else:
             trajectory = robodm.Trajectory(path=output_path, mode="w", video_codec=codec)
         print(hf_dataset.features)
@@ -47,15 +55,15 @@ class LerobotConverter:
 
 if __name__ == "__main__":
     for codec in [
-        # 'auto',
-        # 'rawvideo',
-        'libaom-av1',
-        # 'libx264',
-        # 'libx265',
-        # 'ffv1',
+        'auto',
+        'rawvideo',
+        # 'libaom-av1',
+        'libx264',
+        'libx265',
+        'ffv1',
     ]:
 
-        output_path = f"./tmp/single_imagesNew/single_images_demo_{codec}.vla"
+        output_path = f"./tmp/single_imagesMason/single_images_demo_{codec}.vla"
         print(f"Converting {codec} and saving to {output_path}...")
 
         start_time = time.time()
