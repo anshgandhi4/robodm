@@ -437,12 +437,12 @@ def run_compression_sweep():
         # 'rawvideo': {'supports_crf': False, 'supports_g': False},
         'libx264': {'supports_crf': True, 'supports_g': True},
         'libx265': {'supports_crf': True, 'supports_g': True},
-        'ffv1': {'supports_crf': False, 'supports_g': False},
+        # 'ffv1': {'supports_crf': False, 'supports_g': False},
     }
     
     # Define parameter ranges to test
-    g_values = [10, 30, 60]  # GOP sizes to test (keyframe intervals)
-    crf_values = list(range(18, 29))  # CRF values to test (lower = better quality, larger file)
+    g_values = [10, 30, 60, 120, 240]  # GOP sizes to test (keyframe intervals)
+    crf_values = list(range(18, 29, 2))  # CRF values to test (lower = better quality, larger file)
     
     # Build experiment list based on codec capabilities
     experiments = []
